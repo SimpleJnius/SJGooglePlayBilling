@@ -1,2 +1,2 @@
 # SJGooglePlayBilling
-port google play billing (android) to python
+Port google play billing (android) to python (kivy's p4a and buildozer)

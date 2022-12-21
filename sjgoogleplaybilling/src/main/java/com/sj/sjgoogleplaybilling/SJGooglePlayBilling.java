@@ -30,24 +30,31 @@ import java.util.List;
 import java.util.Objects;
 
 public class SJGooglePlayBilling {
-    public BillingClient billingClient;
-    public BillingFlowParams billingFlowParams;
+    public BillingClient billingClient = null;
+    public BillingFlowParams billingFlowParams = null;
     public final HashMap<String, ProductDetails> mProductDetails = new HashMap<>();
-    public PurchasesUpdatedListener purchasesUpdatedListener;
-    public ConsumeResponseListener consumeResponseListener;
-    public AcknowledgePurchaseResponseListener acknowledgePurchaseResponseListener;
-    public PurchaseHistoryResponseListener purchaseHistoryResponseListener;
-    public PurchasesResponseListener purchasesResponseListener;
+    public PurchasesUpdatedListener purchasesUpdatedListener = null;
+    public ConsumeResponseListener consumeResponseListener = null;
+    public AcknowledgePurchaseResponseListener acknowledgePurchaseResponseListener = null;
+    public PurchaseHistoryResponseListener purchaseHistoryResponseListener = null;
+    public PurchasesResponseListener purchasesResponseListener = null;
+    public PurchaseCanceledListener purchaseCanceledListener = null;
+    public PurchaseErrorListener purchaseErrorListener = null;
+    public BillingServiceDisconnectedListener billingServiceDisconnectedListener = null;
 
-    public void makePayment(Context context, Activity activity, String feature, String productType, String productId) {
+    public BillingResult makePayment(Context context, Activity activity, String productType, String productId) {
         initializeBillingClient(context, productType);
         startBillingClientConnection(productType, productId);
         prepareBillingFlow(productId);
 
-        if (billingClient.isFeatureSupported(feature).getResponseCode() == BillingClient.BillingResponseCode.OK) {
+        BillingResult billingResult = null;
+        if (productType.equals( BillingClient.ProductType.SUBS) &&
+                billingClient.isFeatureSupported("subscriptions").getResponseCode() == BillingClient.BillingResponseCode.OK) {
             // Launch the billing flow
-            BillingResult billingResult = billingClient.launchBillingFlow(activity, billingFlowParams);
-        }
+            billingResult = billingClient.launchBillingFlow(activity, billingFlowParams);
+        }else if (productType.equals(BillingClient.ProductType.INAPP)) {
+            billingResult = billingClient.launchBillingFlow(activity, billingFlowParams);
+        } return billingResult;
     }
 
     private void prepareBillingFlow(String productId) {
@@ -109,6 +116,8 @@ public class SJGooglePlayBilling {
             public void onBillingServiceDisconnected() {
                 // Try to restart the connection on the next request to
                 // Google Play by calling the startConnection() method.
+                if (billingServiceDisconnectedListener != null)
+                    billingServiceDisconnectedListener.onBillingServiceDisconnected();
             }
         });
     }
@@ -125,8 +134,13 @@ public class SJGooglePlayBilling {
                     }
                 } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
                     // Handle an error caused by a user cancelling the purchase flow.
+                    if (purchaseCanceledListener != null)
+                        purchaseCanceledListener.onPurchaseCanceled(billingResult, purchases);
                 } else {
                     // Handle any other error codes.
+                    if (purchaseErrorListener != null)
+                        purchaseErrorListener.onPurchaseError(billingResult, purchases);
+
                 }
             }
         };
@@ -135,10 +149,6 @@ public class SJGooglePlayBilling {
                 .setListener(purchasesUpdatedListener)
                 .enablePendingPurchases()
                 .build();
-    }
-
-    public void setConsumeResponseListener(ConsumeResponseListener consumeResponseListener) {
-        this.consumeResponseListener = consumeResponseListener;
     }
 
     void handlePurchaseConsumable(Purchase purchase) {
@@ -177,10 +187,6 @@ public class SJGooglePlayBilling {
         }
     }
 
-    public void setPurchasesResponseListener(PurchasesResponseListener purchasesResponseListener) {
-        this.purchasesResponseListener = purchasesResponseListener;
-    }
-
     // call this method onResume to handle cases when purchase is made but
     // your app lost track or was unaware of purchases
     public void justInCasePurchaseListener() {
@@ -199,10 +205,6 @@ public class SJGooglePlayBilling {
                         .build(),
                 purchasesResponseListener
         );
-    }
-
-    public void setPurchaseHistoryResponseListener(PurchaseHistoryResponseListener purchaseHistoryResponseListener) {
-        this.purchaseHistoryResponseListener = purchaseHistoryResponseListener;
     }
 
     // get purchase history
@@ -225,4 +227,29 @@ public class SJGooglePlayBilling {
 
 
     }
+
+    public void setPurchaseHistoryResponseListener(PurchaseHistoryResponseListener purchaseHistoryResponseListener) {
+        this.purchaseHistoryResponseListener = purchaseHistoryResponseListener;
+    }
+
+    public void setPurchasesResponseListener(PurchasesResponseListener purchasesResponseListener) {
+        this.purchasesResponseListener = purchasesResponseListener;
+    }
+
+    public void setConsumeResponseListener(ConsumeResponseListener consumeResponseListener) {
+        this.consumeResponseListener = consumeResponseListener;
+    }
+
+    public void setPurchaseCanceledListener(PurchaseCanceledListener purchaseCanceledListener) {
+        this.purchaseCanceledListener = purchaseCanceledListener;
+    }
+
+    public void setPurchaseErrorListener(PurchaseErrorListener purchaseErrorListener) {
+        this.purchaseErrorListener = purchaseErrorListener;
+    }
+
+    public void setBillingServiceDisconnectedListener(BillingServiceDisconnectedListener billingServiceDisconnectedListener) {
+        this.billingServiceDisconnectedListener = billingServiceDisconnectedListener;
+    }
 }
+
