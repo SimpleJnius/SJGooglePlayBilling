@@ -176,6 +176,13 @@ public class SJGooglePlayBilling {
     }
 
     void handlePurchaseNonConsumable(Purchase purchase) {
+        if (acknowledgePurchaseResponseListener == null)
+            acknowledgePurchaseResponseListener = new AcknowledgePurchaseResponseListener() {
+                @Override
+                public void onAcknowledgePurchaseResponse(@NonNull BillingResult billingResult) {
+
+                }
+            };
         if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
             if (!purchase.isAcknowledged()) {
                 AcknowledgePurchaseParams acknowledgePurchaseParams =
@@ -250,6 +257,10 @@ public class SJGooglePlayBilling {
 
     public void setBillingServiceDisconnectedListener(BillingServiceDisconnectedListener billingServiceDisconnectedListener) {
         this.billingServiceDisconnectedListener = billingServiceDisconnectedListener;
+    }
+
+    public void setAcknowledgePurchaseResponseListener(AcknowledgePurchaseResponseListener acknowledgePurchaseResponseListener) {
+        this.acknowledgePurchaseResponseListener = acknowledgePurchaseResponseListener;
     }
 }
 
